@@ -7,7 +7,14 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.pc = 0
+        self.reg = [0]* 10
+        self.ram = [0] * 256
+        self.cmds = {
+            0b10000010: "LDI",
+            0b01000111: "PRN",
+            0b00000001: "HLT"
+        }
 
     def load(self):
         """Load a program into memory."""
@@ -39,7 +46,11 @@ class CPU:
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
-
+    def ram_read(self, pc):
+        return self.ram[pc]
+    def ram_write(self, address, value):
+        self.ram[address] = value
+        return self.ram[address]
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -62,4 +73,22 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        self.load()
+        running = True
+        while running:
+            cmd = self.ram[self.pc]
+            op_size = (cmd >> 6) + 1
+            if self.cmds[cmd]== "LDI":
+                reg_index = self.ram[self.pc + 1]
+                num = self.ram[self.pc + 2]
+                self.reg[reg_index] = num
+            elif self.cmds[cmd]== "PRN":
+                reg_index = self.ram[self.pc + 1]
+                num = self.reg[reg_index]
+                print(num)
+            
+            elif self.cmds[cmd]== "HLT":
+                running = False
+            self.pc += op_size
+cpu = CPU()
+cpu.run()
