@@ -8,21 +8,24 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.pc = 0
+        self.sp = 7
         self.reg = [0]* 10
         self.ram = [0] * 256
         self.cmds = {
             0b10000010: "LDI",
             0b01000111: "PRN",
             0b00000001: "HLT",
-            0b10100010: "MUL"
+            0b10100010: "MUL",
+            0b01000101: "PUSH",
+            0b01000110: "POP"
         }
 
-    def load(self):
+    def load(self, filename):
         """Load a program into memory."""
 
-        address = 0
+        MAR = 0
 
-                try:
+            try:
             with open(filename) as f:
                 for line in f:
                     line = line.split('#')
@@ -33,8 +36,8 @@ class CPU:
 
                     value = int(n, 2)
 
-                    self.ram_write(address, value)
-                    address += 1
+                    self.ram_write(MAR, MDR)
+                    MAR += 1
 
         except FileNotFoundError:
             print(f"{sys.argv[0]}: {filename} not found")
@@ -70,11 +73,11 @@ class CPU:
             self.reg[reg_a] /= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
-    def ram_read(self, pc):
-        return self.ram[pc]
-    def ram_write(self, address, value):
-        self.ram[address] = value
-        return self.ram[address]
+    def ram_read(self, MAR):
+        return self.ram[MAR]
+    def ram_write(self, MAR, MDR):
+        self.ram[MAR] = MDR
+        return self.ram[MAR]
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -122,6 +125,21 @@ class CPU:
                 num1_index = self.ram_read(self.pc + 1)
                 num2_index = self.ram_read(self.pc + 2)
                 self.alu('MUL', num1_index, num2_index)
+            elif self.cmds[cmd] == 'PUSH':
+                reg_index = self.ram_read(self.pc + 1)
+                value = self.reg[reg_index]
+
+                self.reg[self.sp] -= 1
+
+                self.ram_write(self.reg[self.sp], value)
+
+            elif self.cmds[cmd] == 'POP':
+                reg_index = self.ram_read(self.pc + 1)
+                value = self.ram_read(self.reg[self.sp])
+
+                self.reg[reg_index] = value
+
+                self.reg[self.sp] += 1
 
             elif self.cmds[cmd] == 'HLT':
                 running = False
